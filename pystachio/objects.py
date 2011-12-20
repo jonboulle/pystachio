@@ -91,8 +91,10 @@ class ObjectBase(object):
   def translate_to_scopes(*args, **kw):
     scopes = []
     for arg in args:
-      assert isinstance(arg, Namable)
-      scopes.insert(0, arg)
+      if isinstance(arg, Namable):
+        scopes.insert(0, arg)
+      else:
+        scopes.insert(0, Environment.wrap(arg))
     if kw:
       scopes.insert(0, Environment(**kw))
     return scopes
@@ -195,9 +197,12 @@ class Object(ObjectBase):
   def __ge__(self, other):
     return self._my_cmp(other) >= 0
 
-  def __repr__(self):
+  def __unicode__(self):
     si, _ = self.interpolate()
-    return '%s(%s)' % (self.__class__.__name__, si._value)
+    return unicode(si._value)
+
+  def __repr__(self):
+    return '%s(%s)' % (self.__class__.__name__, unicode(self))
 
   def interpolate(self):
     if not isinstance(self._value, basestring):
