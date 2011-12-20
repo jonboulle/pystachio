@@ -70,7 +70,8 @@ def test_mustache_re():
   # valid ref names
   assert MustacheParser.split("{{foo}}") == [Ref("foo")]
   assert MustacheParser.split("{{_}}") == [Ref("_")]
-  assert MustacheParser.split("{{4}}") == [Ref("4")]
+  with pytest.raises(Ref.InvalidRefError):
+    MustacheParser.split("{{4}}")
   def chrange(a,b):
     return ''.join(map(lambda ch: str(chr(ch)), range(ord(a), ord(b)+1)))
   slash_w = chrange('a','z') + chrange('A','Z') + chrange('0','9') + '_'
@@ -87,7 +88,7 @@ def test_mustache_re():
   invalid_refs = ['!@', '-', '$', ':']
   for ref in invalid_refs:
     with pytest.raises(Ref.InvalidRefError):
-      MustacheParser.split("{{%s}}" % ref)
+      print MustacheParser.split("{{%s}}" % ref)
 
 def test_mustache_splitting():
   assert MustacheParser.split("{{foo}}") == [Ref("foo")]
@@ -113,9 +114,7 @@ def test_mustache_joining():
   with pytest.raises(MustacheParser.Uninterpolatable):
     MustacheParser.join(splits, oe)
   joined, unbound = MustacheParser.join(splits, oe, strict=False)
-  # TODO(wickman) The prevailing '.' could be an indicator of a poorly thought
-  # design.
-  assert joined == 'foo herp bar derp {{.unbound}}'
+  assert joined == 'foo herp bar derp {{unbound}}'
   assert unbound == [Ref('unbound')]
 
 def test_ref_lookup():
