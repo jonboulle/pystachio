@@ -4,33 +4,33 @@ from pystachio.naming import (
   Ref,
   Namable)
 
-class MountTable(Namable):
+class Environment(Namable):
   """
-    A map from Ref => Object used for Mustache bindings.
+    A mount table for Refs pointing to Objects or arbitrary string substitutions.
   """
 
   @staticmethod
   def wrap(value):
     if isinstance(value, dict):
-      return MountTable(value)
-    elif isinstance(value, (MountTable, ObjectBase)):
+      return Environment(value)
+    elif isinstance(value, (Environment, ObjectBase)):
       return value
     else:
       if isinstance(value, (int, long, float, basestring)):
         return str(value)
       else:
-        raise ValueError('Error in MountTable.wrap(%s)' % repr(value))
+        raise ValueError('Error in Environment.wrap(%s)' % repr(value))
 
   def _assimilate_dictionary(self, d):
     for key, val in d.items():
-      val = MountTable.wrap(val)
+      val = Environment.wrap(val)
       rkey = Ref.wrap(key)
-      if isinstance(val, MountTable):
+      if isinstance(val, Environment):
         for vkey, vval in val._table.items():
           self._table[rkey + vkey] = vval
       else:
         self._table[rkey] = val
-  
+
   def _assimilate_table(self, mt):
     for key, val in mt._table.items():
       self._table[key] = val
@@ -40,10 +40,10 @@ class MountTable(Namable):
     for d in list(dicts) + [kw]:
       if isinstance(d, dict):
         self._assimilate_dictionary(d)
-      elif isinstance(d, MountTable):
+      elif isinstance(d, Environment):
         self._assimilate_table(d)
       else:
-        raise ValueError("MountTable expects dict or MountTable, got %s" % repr(d))
+        raise ValueError("Environment expects dict or Environment, got %s" % repr(d))
 
   def find(self, ref):
     if ref in self._table:
@@ -68,7 +68,7 @@ class MountTable(Namable):
     raise KeyError(ref)
 
   def __repr__(self):
-    return 'MountTable(%s)' % pformat(self._table)
+    return 'Environment(%s)' % pformat(self._table)
 
 class ObjectBase(object):
   """
@@ -101,8 +101,8 @@ class ObjectBase(object):
   def translate_to_scopes(*args, **kw):
     scopes = []
     for arg in args:
-      scopes.append(arg if isinstance(arg, Namable) else MountTable.wrap(arg))
-    scopes.extend([MountTable(kw)] if kw else [])
+      scopes.append(arg if isinstance(arg, Namable) else Environment.wrap(arg))
+    scopes.extend([Environment(kw)] if kw else [])
     return scopes
 
   def bind(self, *args, **kw):
@@ -138,7 +138,7 @@ class ObjectBase(object):
 
   def __mod__(self, namable):
     if isinstance(namable, dict):
-      namable = MountTable.wrap(namable)
+      namable = Environment.wrap(namable)
     interp, _ = self.in_scope(namable).interpolate()
     return interp
 

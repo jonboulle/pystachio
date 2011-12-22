@@ -93,19 +93,19 @@ class Ref(object):
 
   def components(self):
     return self._components
-  
+
   def action(self):
     return self._components[0]
-  
+
   def is_index(self):
     return isinstance(self.action(), Ref.Index)
-  
+
   def is_dereference(self):
     return isinstance(self.action(), Ref.Dereference)
-  
+
   def is_empty(self):
     return len(self.components()) == 0
-  
+
   def rest(self):
     return Ref(self.components()[1:])
 

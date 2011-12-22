@@ -9,7 +9,7 @@ from pystachio import (
   Map,
   Required)
 from pystachio.naming import Ref, Namable
-from pystachio.base import MountTable
+from pystachio.base import Environment
 
 def makeref(address):
   return Ref.from_address(address)
@@ -31,13 +31,13 @@ def test_ref_parsing():
 
 
 def test_ref_lookup():
-  oe = MountTable(a = 1)
+  oe = Environment(a = 1)
   assert oe.find(makeref("a")) == '1'
 
-  oe = MountTable(a = {'b': 1})
+  oe = Environment(a = {'b': 1})
   assert oe.find(makeref("a.b")) == '1'
 
-  oe = MountTable(a = {'b': {'c': 1}, 'c': MountTable(d = 2)})
+  oe = Environment(a = {'b': {'c': 1}, 'c': Environment(d = 2)})
   assert oe.find(makeref('a.b.c')) == '1'
   assert oe.find(makeref('a.c.d')) == '2'
 
@@ -52,7 +52,7 @@ def test_ref_lookup():
 
   oe = List(Map(String,Integer))([{'a': 27}])
   oe.find(makeref('[0][a]')) == Integer(27)
-  MountTable(foo = oe).find(makeref('foo[0][a]')) == Integer(27)
+  Environment(foo = oe).find(makeref('foo[0][a]')) == Integer(27)
 
 def test_complex_lookup():
   class Employee(Struct):
@@ -71,8 +71,8 @@ def test_complex_lookup():
          Employee(last = '{{default.last}}')
     ])
 
-  
-  assert MountTable(twttr = twttr).find(makeref('twttr.employees[1].first')) == String('marius')
+
+  assert Environment(twttr = twttr).find(makeref('twttr.employees[1].first')) == String('marius')
   assert Map(String,Employer)({'twttr': twttr}).find(makeref('[twttr].employees[1].first')) == String('marius')
   assert List(Employer)([twttr]).find(makeref('[0].employees[0].last')) == String('wickman')
   assert List(Employer)([twttr]).find(makeref('[0].employees[2].last')) == String('{{default.last}}')
@@ -91,7 +91,7 @@ def test_scope_override():
   class MesosConfig(Struct):
     ports = Map(String, Integer)
   config = MesosConfig(ports = {'http': 80, 'health': 8888})
-  env = MountTable({makeref('config.ports[http]'): 5000}, config = config)
+  env = Environment({makeref('config.ports[http]'): 5000}, config = config)
   assert env.find(makeref('config.ports[http]')) == '5000'
   assert env.find(makeref('config.ports[health]')) == Integer(8888)
 
@@ -99,11 +99,11 @@ def test_inherited_scope():
   class PhoneBookEntry(Struct):
     name = Required(String)
     number = Required(Integer)
-    
+
   class PhoneBook(Struct):
     city = Required(String)
     people = List(PhoneBookEntry)
-  
+
   sf = PhoneBook(city = "San Francisco").bind(areacode = 415)
   sj = PhoneBook(city = "San Jose").bind(areacode = 408)
   jenny = PhoneBookEntry(name = "Jenny", number = "{{areacode}}8675309")

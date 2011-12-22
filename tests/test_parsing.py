@@ -6,7 +6,8 @@ from pystachio import (
   Ref,
   List,
   Map,
-  String, MountTable)
+  String,
+  Environment)
 
 def makeref(address):
   return Ref.from_address(address)
@@ -42,9 +43,9 @@ def test_mustache_splitting():
   assert splits == ['blech ', makeref("foo"), ' ', makeref('bar'), ' bonk ', '{{baz}}', ' bling']
 
 def test_mustache_joining():
-  oe = MountTable(foo = "foo herp",
-                  bar = "bar derp",
-                  baz = "baz blerp")
+  oe = Environment(foo = "foo herp",
+                   bar = "bar derp",
+                   baz = "baz blerp")
 
   joined, unbound = MustacheParser.join(MustacheParser.split("{{foo}}"), oe)
   assert joined == "foo herp"

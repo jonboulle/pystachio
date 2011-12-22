@@ -2,7 +2,7 @@ __author__ = 'Brian Wickman'
 __version__ = '0.1.0'
 __license__ = 'MIT'
 
-from pystachio.base import MountTable
+from pystachio.base import Environment
 from pystachio.parsing import MustacheParser
 from pystachio.naming import Namable, Ref
 
