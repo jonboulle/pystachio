@@ -1,13 +1,8 @@
 import copy
 
-from pystachio.environment import Environment
-from pystachio.naming import Namable
+from pystachio.base import ObjectBase
 from pystachio.parsing import MustacheParser
 from pystachio.schema import Schemaless
-
-class Empty(object):
-  """The Empty sentinel representing an unspecified field."""
-  pass
 
 
 class frozendict(dict):
@@ -55,96 +50,6 @@ class TypeCheck(object):
       return 'TypeCheck(OK)'
     else:
       return 'TypeCheck(FAILED): %s' % self._message
-
-
-class ObjectBase(object):
-  """
-    ObjectBase base class, encapsulating a set of variable bindings scoped to this object.
-  """
-
-  class InterpolationError(Exception): pass
-
-  @classmethod
-  def checker(cls, obj):
-    raise NotImplementedError
-
-  def __init__(self):
-    self._scopes = []
-
-  def get(self):
-    raise NotImplementedError
-
-  def __hash__(self):
-    si, _ = self.interpolate()
-    return hash(si.get())
-
-  def copy(self):
-    """
-      Return a copy of this object.
-    """
-    raise NotImplementedError
-
-  @staticmethod
-  def translate_to_scopes(*args, **kw):
-    scopes = []
-    for arg in args:
-      if isinstance(arg, Namable):
-        scopes.insert(0, arg)
-      else:
-        scopes.insert(0, Environment.wrap(arg))
-    if kw:
-      scopes.insert(0, Environment(**kw))
-    return scopes
-
-  def bind(self, *args, **kw):
-    """
-      Bind environment variables into this object's scope.
-    """
-    new_self = self.copy()
-    new_scopes = ObjectBase.translate_to_scopes(*args, **kw)
-    new_self._scopes = new_scopes + new_self._scopes
-    return new_self
-
-  def in_scope(self, *args, **kw):
-    """
-      Scope this object to a parent environment (like bind but reversed.)
-    """
-    new_self = self.copy()
-    new_scopes = ObjectBase.translate_to_scopes(*args, **kw)
-    new_self._scopes = new_self._scopes + new_scopes
-    return new_self
-
-  def scopes(self):
-    return self._scopes
-
-  def check(self):
-    """
-      Type check this object.
-    """
-    si, _ = self.interpolate()
-    return self.checker(si)
-
-  def __ne__(self, other):
-    return not (self == other)
-
-  def __mod__(self, namable):
-    if isinstance(namable, dict):
-      namable = Environment.wrap(namable)
-    interp, _ = self.in_scope(namable).interpolate()
-    return interp
-
-  def interpolate(self):
-    """
-      Interpolate this object in the context of the Object's environment.
-
-      Should return a 2-tuple:
-        The object with as much interpolated as possible.
-        The remaining unbound Refs necessary to fully interpolate the object.
-
-      If the object is fully interpolated, it should be typechecked prior to
-      return.
-    """
-    raise NotImplementedError
 
 
 class Object(ObjectBase):

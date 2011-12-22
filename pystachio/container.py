@@ -4,14 +4,14 @@ from collections import (
 import copy
 from inspect import isclass
 
-from pystachio.naming import Indexed
+from pystachio.base import ObjectBase
+from pystachio.naming import Namable
 from pystachio.objects import (
-  ObjectBase,
   TypeCheck,
   frozendict)
 from pystachio.schema import Schema
 
-class ListContainer(ObjectBase, Schema, Indexed):
+class ListContainer(ObjectBase, Schema, Namable):
   """
     The List container type.  This is the base class for all user-generated
     List types.  It won't function as-is, since it requires cls.TYPE to be
@@ -91,15 +91,24 @@ class ListContainer(ObjectBase, Schema, Indexed):
       unbound.update(eunbound)
     return self.__class__(interpolated), list(unbound)
 
-  def lookup(self, value):
+  def find(self, ref):
+    if not ref.is_index():
+      raise Namable.NamingError(self, ref)
     try:
-      intvalue = int(value)
+      intvalue = int(ref.action().value)
     except ValueError:
-      raise Indexed.Unresolvable(value)
-    if len(self._values) > intvalue:
-      return self._values[intvalue]
+      raise Namable.NotFound(self, ref)
+    if len(self._values) <= intvalue:
+      raise Namable.NotFound(self, ref)
     else:
-      raise Indexed.Unresolvable(value)
+      namable = self._values[intvalue]
+      if ref.rest().is_empty():
+        return namable.in_scope(*self.scopes())
+      else:
+        if not isinstance(namable, Namable):
+          raise Namable.Unnamable(namable)
+        else:
+          return namable.in_scope(*self.scopes()).find(ref.rest())
 
   @classmethod
   def schema_name(cls):
@@ -124,7 +133,7 @@ Schema.register_schema(ListContainer)
 List = ListContainer.new
 
 
-class MapContainer(ObjectBase, Schema, Indexed):
+class MapContainer(ObjectBase, Schema, Namable):
   """
     The Map container type.  This is the base class for all user-generated
     Map types.  It won't function as-is, since it requires cls.KEYTYPE and
@@ -206,12 +215,21 @@ class MapContainer(ObjectBase, Schema, Indexed):
       interpolated[kinterp] = vinterp
     return self.__class__(interpolated), list(unbound)
 
-  def lookup(self, value):
-    kvalue = self.KEYTYPE(value)
-    if kvalue in self._map:
-      return self._map[kvalue]
+  def find(self, ref):
+    if not ref.is_index():
+      raise Namable.NamingError(self, ref)
+    kvalue = self.KEYTYPE(ref.action().value)
+    if kvalue not in self._map:
+      raise Namable.NotFound(self, ref)
     else:
-      raise Indexed.Unresolvable(value)
+      namable = self._map[kvalue]
+      if ref.rest().is_empty():
+        return namable.in_scope(*self.scopes())
+      else:
+        if not isinstance(namable, Namable):
+          raise Namable.Unnamable(namable)
+        else:
+          return namable.in_scope(*self.scopes()).find(ref.rest())
 
   @classmethod
   def schema_name(cls):

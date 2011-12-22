@@ -2,13 +2,16 @@ from collections import Mapping
 import copy
 from inspect import isclass
 
+from pystachio.base import ObjectBase
 from pystachio.objects import (
-  Empty,
-  ObjectBase,
   TypeCheck,
   frozendict)
 from pystachio.schema import Schema
-from pystachio.naming import Dereferenced
+from pystachio.naming import Namable
+
+class Empty(object):
+  """The Empty sentinel representing an unspecified field."""
+  pass
 
 class TypeSignature(object):
   """
@@ -99,7 +102,7 @@ class StructMetaclass(type):
     return type.__new__(mcs, name, parents, augmented_attributes)
 
 
-class Struct(ObjectBase, Schema, Dereferenced):
+class Struct(ObjectBase, Schema, Namable):
   """
     Schema-based composite objects, e.g.
 
@@ -236,10 +239,20 @@ class Struct(ObjectBase, Schema, Dereferenced):
         typemap[name] = TypeSignature(real_class, required=req)
     return StructMetaclass(schema_parameters['__name__'], (Struct,), typemap)
 
-  def lookup(self, name):
-    if name in self.TYPEMAP and self._schema_data[name] is not Empty:
-      return self._schema_data[name]
+  def find(self, ref):
+    if not ref.is_dereference():
+      raise Namable.NamingError(self, ref)
+    name = ref.action().value
+    if name not in self.TYPEMAP or self._schema_data[name] is Empty:
+      raise Namable.NotFound(self, ref)
     else:
-      raise Dereferenced.Unresolvable(name)
+      namable = self._schema_data[name]
+      if ref.rest().is_empty():
+        return namable.in_scope(*self.scopes())
+      else:
+        if not isinstance(namable, Namable):
+          raise Namable.Unnamable(namable)
+        else:
+          return namable.in_scope(*self.scopes()).find(ref.rest())
 
 Schema.register_schema(Struct)
