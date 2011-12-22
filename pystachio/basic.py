@@ -1,58 +1,10 @@
 import copy
 
-from pystachio.base import ObjectBase
+from pystachio.base import Object, TypeCheck
 from pystachio.parsing import MustacheParser
 from pystachio.schema import Schemaless
 
-
-class frozendict(dict):
-  """A hashable dictionary."""
-  def __key(self):
-    return tuple((k, self[k]) for k in sorted(self))
-
-  def __hash__(self):
-    return hash(self.__key())
-
-  def __eq__(self, other):
-    return self.__key() == other.__key()
-
-  def __repr__(self):
-    return 'frozendict(%s)' % dict.__repr__(self)
-
-
-class TypeCheck(object):
-  """
-    Encapsulate the results of a type check pass.
-  """
-  class Error(Exception):
-    pass
-
-  @staticmethod
-  def success():
-    return TypeCheck(True, "")
-
-  @staticmethod
-  def failure(msg):
-    return TypeCheck(False, msg)
-
-  def __init__(self, success, message):
-    self._success = success
-    self._message = message
-
-  def message(self):
-    return self._message
-
-  def ok(self):
-    return self._success
-
-  def __repr__(self):
-    if self.ok():
-      return 'TypeCheck(OK)'
-    else:
-      return 'TypeCheck(FAILED): %s' % self._message
-
-
-class Object(ObjectBase):
+class SimpleObject(Object):
   """
     A simply-valued (unnamable) object.
   """
@@ -62,7 +14,7 @@ class Object(ObjectBase):
 
   def __init__(self, value):
     self._value = copy.deepcopy(value)
-    ObjectBase.__init__(self)
+    Object.__init__(self)
 
   def get(self):
     return self._value
@@ -124,7 +76,7 @@ class Object(ObjectBase):
         return self_copy, unbound
 
 
-class String(Object, Schemaless):
+class String(SimpleObject, Schemaless):
   @classmethod
   def checker(cls, obj):
     if not isinstance(obj, String):
@@ -138,7 +90,7 @@ class String(Object, Schemaless):
   def coerce(cls, value):
     ACCEPTED_SOURCE_TYPES = (int, float, basestring)
     if not isinstance(value, ACCEPTED_SOURCE_TYPES):
-      raise Object.CoercionError(value, cls)
+      raise SimpleObject.CoercionError(value, cls)
     return unicode(value)
 
   @classmethod
@@ -146,7 +98,7 @@ class String(Object, Schemaless):
     return 'String'
 
 
-class Integer(Object, Schemaless):
+class Integer(SimpleObject, Schemaless):
   @classmethod
   def checker(cls, obj):
     if not isinstance(obj, Integer):
@@ -160,11 +112,11 @@ class Integer(Object, Schemaless):
   def coerce(cls, value):
     ACCEPTED_SOURCE_TYPES = (int, float, basestring)
     if not isinstance(value, ACCEPTED_SOURCE_TYPES):
-      raise Object.CoercionError(value, cls)
+      raise SimpleObject.CoercionError(value, cls)
     try:
       return int(value)
     except ValueError:
-      raise Object.CoercionError(value, cls)
+      raise SimpleObject.CoercionError(value, cls)
 
   @classmethod
   def schema_name(cls):
@@ -172,7 +124,7 @@ class Integer(Object, Schemaless):
 
 
 
-class Float(Object, Schemaless):
+class Float(SimpleObject, Schemaless):
   @classmethod
   def checker(cls, obj):
     if not isinstance(obj, Float):
@@ -186,11 +138,11 @@ class Float(Object, Schemaless):
   def coerce(cls, value):
     ACCEPTED_SOURCE_TYPES = (int, float, basestring)
     if not isinstance(value, ACCEPTED_SOURCE_TYPES):
-      raise Object.CoercionError(value, cls)
+      raise SimpleObject.CoercionError(value, cls)
     try:
       return float(value)
     except ValueError:
-      raise Object.CoercionError(value, cls)
+      raise SimpleObject.CoercionError(value, cls)
 
   @classmethod
   def schema_name(cls):

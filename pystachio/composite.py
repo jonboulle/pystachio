@@ -2,10 +2,7 @@ from collections import Mapping
 import copy
 from inspect import isclass
 
-from pystachio.base import ObjectBase
-from pystachio.objects import (
-  TypeCheck,
-  frozendict)
+from pystachio.base import TypeCheck, Object, frozendict
 from pystachio.schema import Schema
 from pystachio.naming import Namable
 
@@ -20,7 +17,7 @@ class TypeSignature(object):
 
   def __init__(self, cls, required=False, default=Empty):
     assert isclass(cls)
-    assert issubclass(cls, ObjectBase)
+    assert issubclass(cls, Object)
     if default is not Empty and not isinstance(default, cls):
       self._default = cls(default)
     else:
@@ -59,7 +56,7 @@ class TypeSignature(object):
 
   @staticmethod
   def parse(sig):
-    if isclass(sig) and issubclass(sig, ObjectBase):
+    if isclass(sig) and issubclass(sig, Object):
       return TypeSignature(sig)
     elif isinstance(sig, TypeSignature):
       return sig
@@ -102,7 +99,7 @@ class StructMetaclass(type):
     return type.__new__(mcs, name, parents, augmented_attributes)
 
 
-class Struct(ObjectBase, Schema, Namable):
+class Struct(Object, Schema, Namable):
   """
     Schema-based composite objects, e.g.
 
@@ -132,7 +129,7 @@ class Struct(ObjectBase, Schema, Namable):
         raise ValueError('Expected dictionary argument')
       self._update_schema_data(**arg)
     self._update_schema_data(**copy.deepcopy(kw))
-    ObjectBase.__init__(self)
+    Object.__init__(self)
 
   def get(self):
     return frozendict((k, v.get()) for k, v in self._schema_data.items() if v is not Empty)

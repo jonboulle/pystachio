@@ -1,7 +1,7 @@
 import pytest
 from pystachio.base import Environment
 from pystachio.naming import Ref
-from pystachio.objects import Integer
+from pystachio.basic import Integer
 from pystachio.container import List
 
 def dtd(d):

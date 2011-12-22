@@ -6,7 +6,7 @@ from pystachio.base import Environment
 from pystachio.parsing import MustacheParser
 from pystachio.naming import Namable, Ref
 
-from pystachio.objects import (
+from pystachio.basic import (
   Float,
   Integer,
   String)

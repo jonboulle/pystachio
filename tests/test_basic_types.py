@@ -1,10 +1,6 @@
 import pytest
 import unittest
-from pystachio import (
-  String,
-  Integer,
-  Float)
-from pystachio.objects import Object
+from pystachio.basic import String, Integer, Float, SimpleObject
 
 def test_bad_inputs():
   for typ in Float, Integer, String:
@@ -18,7 +14,7 @@ def test_bad_inputs():
     bad_inputs = [ {1:2}, None, type, Float, Integer, String,
                    Float(1), Integer(1), String(1) ]
     for inp in bad_inputs:
-      with pytest.raises(Object.CoercionError):
+      with pytest.raises(SimpleObject.CoercionError):
         '%s' % typ(inp)
 
 def test_string_constructors():
@@ -36,7 +32,7 @@ def test_float_constructors():
   good_inputs = [u'{{foo}}', '1 ', ' 1', u'  1e5', ' {{herp}}.{{derp}} ', 0, 0.0, 1e5]
 
   for input in bad_inputs:
-    with pytest.raises(Object.CoercionError):
+    with pytest.raises(SimpleObject.CoercionError):
       '%s' % Float(input)
 
   for input in good_inputs:
@@ -50,7 +46,7 @@ def test_integer_constructors():
   good_inputs = [u'{{foo}}', '1 ', ' 1', ' {{herp}}.{{derp}} ', 0, 0.0, 1e5]
 
   for input in bad_inputs:
-    with pytest.raises(Object.CoercionError):
+    with pytest.raises(SimpleObject.CoercionError):
       '%s' % Integer(input)
 
   for input in good_inputs:

@@ -4,6 +4,53 @@ from pystachio.naming import (
   Ref,
   Namable)
 
+class frozendict(dict):
+  """A hashable dictionary."""
+  def __key(self):
+    return tuple((k, self[k]) for k in sorted(self))
+
+  def __hash__(self):
+    return hash(self.__key())
+
+  def __eq__(self, other):
+    return self.__key() == other.__key()
+
+  def __repr__(self):
+    return 'frozendict(%s)' % dict.__repr__(self)
+
+
+class TypeCheck(object):
+  """
+    Encapsulate the results of a type check pass.
+  """
+  class Error(Exception):
+    pass
+
+  @staticmethod
+  def success():
+    return TypeCheck(True, "")
+
+  @staticmethod
+  def failure(msg):
+    return TypeCheck(False, msg)
+
+  def __init__(self, success, message):
+    self._success = success
+    self._message = message
+
+  def message(self):
+    return self._message
+
+  def ok(self):
+    return self._success
+
+  def __repr__(self):
+    if self.ok():
+      return 'TypeCheck(OK)'
+    else:
+      return 'TypeCheck(FAILED): %s' % self._message
+
+
 class Environment(Namable):
   """
     A mount table for Refs pointing to Objects or arbitrary string substitutions.
@@ -13,7 +60,7 @@ class Environment(Namable):
   def wrap(value):
     if isinstance(value, dict):
       return Environment(value)
-    elif isinstance(value, (Environment, ObjectBase)):
+    elif isinstance(value, (Environment, Object)):
       return value
     else:
       if isinstance(value, (int, long, float, basestring)):
@@ -70,9 +117,9 @@ class Environment(Namable):
   def __repr__(self):
     return 'Environment(%s)' % pformat(self._table)
 
-class ObjectBase(object):
+class Object(object):
   """
-    ObjectBase base class, encapsulating a set of variable bindings scoped to this object.
+    Object base class, encapsulating a set of variable bindings scoped to this object.
   """
 
   class InterpolationError(Exception): pass
@@ -110,7 +157,7 @@ class ObjectBase(object):
       Bind environment variables into this object's scope.
     """
     new_self = self.copy()
-    new_scopes = ObjectBase.translate_to_scopes(*args, **kw)
+    new_scopes = Object.translate_to_scopes(*args, **kw)
     new_self._scopes = list(reversed(new_scopes)) + new_self._scopes
     return new_self
 
@@ -119,7 +166,7 @@ class ObjectBase(object):
       Scope this object to a parent environment (like bind but reversed.)
     """
     new_self = self.copy()
-    new_scopes = ObjectBase.translate_to_scopes(*args, **kw)
+    new_scopes = Object.translate_to_scopes(*args, **kw)
     new_self._scopes = new_self._scopes + new_scopes
     return new_self
 
