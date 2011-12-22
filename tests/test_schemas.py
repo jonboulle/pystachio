@@ -1,5 +1,3 @@
-import pytest
-
 from pystachio import *
 from pystachio.schema import Schema
 

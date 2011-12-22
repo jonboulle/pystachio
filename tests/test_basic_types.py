@@ -1,5 +1,5 @@
 import pytest
-import unittest
+
 from pystachio.basic import String, Integer, Float, SimpleObject
 
 def test_bad_inputs():

@@ -1,12 +1,6 @@
-import pytest
-import unittest
-from pystachio import (
-  Ref,
-  String,
-  Integer,
-  Float,
-  Map,
-  List)
+from pystachio.naming import Ref
+from pystachio.basic import *
+from pystachio.container import List, Map
 
 def test_basic_lists():
   assert List(Integer)([]).check().ok()

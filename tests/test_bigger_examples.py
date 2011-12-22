@@ -1,6 +1,3 @@
-import pytest
-import unittest
-
 from pystachio import *
 
 class CommandLine(Struct):

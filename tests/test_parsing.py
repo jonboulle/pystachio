@@ -1,46 +1,40 @@
 import pytest
-import unittest
 
-from pystachio import (
-  MustacheParser,
-  Ref,
-  List,
-  Map,
-  String,
-  Environment)
+from pystachio.parsing import MustacheParser
+from pystachio.naming import Ref
+from pystachio.base import Environment
 
-def makeref(address):
+def ref(address):
   return Ref.from_address(address)
 
 def test_mustache_re():
-  # valid ref names
-  assert MustacheParser.split("{{foo}}") == [makeref("foo")]
-  assert MustacheParser.split("{{_}}") == [makeref("_")]
+  assert MustacheParser.split("{{foo}}") == [ref("foo")]
+  assert MustacheParser.split("{{_}}") == [ref("_")]
   with pytest.raises(Ref.InvalidRefError):
     MustacheParser.split("{{4}}")
   def chrange(a,b):
     return ''.join(map(lambda ch: str(chr(ch)), range(ord(a), ord(b)+1)))
   slash_w = chrange('a','z') + chrange('A','Z') + chrange('0','9') + '_'
-  assert MustacheParser.split("{{%s}}" % slash_w) == [makeref(slash_w)]
+  assert MustacheParser.split("{{%s}}" % slash_w) == [ref(slash_w)]
 
   # bracketing
-  assert MustacheParser.split("{{{foo}}") == ['{', makeref('foo')]
-  assert MustacheParser.split("{{foo}}}") == [makeref('foo'), '}']
-  assert MustacheParser.split("{{{foo}}}") == ['{', makeref('foo'), '}']
+  assert MustacheParser.split("{{{foo}}") == ['{', ref('foo')]
+  assert MustacheParser.split("{{foo}}}") == [ref('foo'), '}']
+  assert MustacheParser.split("{{{foo}}}") == ['{', ref('foo'), '}']
   assert MustacheParser.split("{{}}") == ['{{}}']
   assert MustacheParser.split("{{{}}}") == ['{{{}}}']
-  assert MustacheParser.split("{{{{foo}}}}") == ['{{', makeref("foo"), '}}']
+  assert MustacheParser.split("{{{{foo}}}}") == ['{{', ref("foo"), '}}']
 
   invalid_refs = ['!@', '-', '$', ':']
-  for ref in invalid_refs:
+  for val in invalid_refs:
     with pytest.raises(Ref.InvalidRefError):
-      print MustacheParser.split("{{%s}}" % ref)
+      print MustacheParser.split("{{%s}}" % val)
 
 def test_mustache_splitting():
-  assert MustacheParser.split("{{foo}}") == [makeref("foo")]
+  assert MustacheParser.split("{{foo}}") == [ref("foo")]
   assert MustacheParser.split("{{&foo}}") == ["{{foo}}"]
   splits = MustacheParser.split('blech {{foo}} {{bar}} bonk {{&baz}} bling')
-  assert splits == ['blech ', makeref("foo"), ' ', makeref('bar'), ' bonk ', '{{baz}}', ' bling']
+  assert splits == ['blech ', ref("foo"), ' ', ref('bar'), ' bonk ', '{{baz}}', ' bling']
 
 def test_mustache_joining():
   oe = Environment(foo = "foo herp",
