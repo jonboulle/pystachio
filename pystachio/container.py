@@ -5,17 +5,15 @@ from inspect import isclass
 from pystachio import Types
 from pystachio.base import Object, TypeCheck, frozendict
 from pystachio.naming import Namable
-from pystachio.schema import Schema
+from pystachio.schema import ParametricType
 
-class ListContainer(Object, Schema, Namable):
+class ListContainer(Namable, Object, ParametricType):
   """
     The List container type.  This is the base class for all user-generated
     List types.  It won't function as-is, since it requires cls.TYPE to be
     set to the contained type.  If you want a concrete List type, see the
     List() function.
   """
-  _MEMOIZED_TYPES = {}
-
   @staticmethod
   def new(klazz):
     """
@@ -130,7 +128,7 @@ Schema.register_schema(ListContainer)
 List = ListContainer.new
 
 
-class MapContainer(Object, Schema, Namable):
+class MapContainer(Namable, Object, ParametricType):
   """
     The Map container type.  This is the base class for all user-generated
     Map types.  It won't function as-is, since it requires cls.KEYTYPE and

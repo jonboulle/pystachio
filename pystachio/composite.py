@@ -92,6 +92,11 @@ class StructMetaclass(type):
     for extracted_attribute in typemap:
       attributes.pop(extracted_attribute)
     attributes['TYPEMAP'] = typemap
+    # Fundamentally TYPEMAP is just:
+    #    tuple((name1, sig1), (name2, sig2), ...)
+    # and sig is itself just a tuple, so really:
+    #    tuple((name1, sig1_1, sig1_2, ...), (name2, sig2_1, sig2_2, ...))
+    # which fits very well into the structure of the schema.
     return attributes
 
   def __new__(mcs, name, parents, attributes):
