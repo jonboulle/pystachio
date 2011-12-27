@@ -5,7 +5,7 @@ from inspect import isclass
 from pystachio import Types
 from pystachio.base import Object, frozendict
 from pystachio.naming import Namable
-from pystachio.schema import TypeFactory, Type
+from pystachio.schema import TypeFactory, Type, TypeCheck, TypeMetaclass
 
 class ListFactory(TypeFactory):
   PROVIDES = 'List'
@@ -19,7 +19,7 @@ class ListFactory(TypeFactory):
     klazz = TypeFactory.new(*type_parameters[0])
     assert isclass(klazz)
     assert issubclass(klazz, Object)
-    return type('%sList' % klazz.__name__, (ListContainer,), { 'TYPE': klazz })
+    return TypeMetaclass('%sList' % klazz.__name__, (ListContainer,), { 'TYPE': klazz })
 
 
 class ListContainer(Namable, Object, Type):
@@ -34,12 +34,15 @@ class ListContainer(Namable, Object, Type):
     Object.__init__(self)
 
   def get(self):
-    return [v.get() for v in self._values]
+    return tuple([v.get() for v in self._values])
 
   def copy(self):
     new_self = self.__class__(self._values)
     new_self._scopes = copy.deepcopy(self.scopes())
     return new_self
+
+  def __hash__(self):
+    return hash(self.get())
 
   def __repr__(self):
     si, _ = self.interpolate()
@@ -61,11 +64,21 @@ class ListContainer(Namable, Object, Type):
     if not ListContainer.isiterable(values):
       raise ValueError("ListContainer expects an iterable, got %s" % repr(values))
     def coerced(value):
+      print('Coercing %s to %s' % (type(value), self.TYPE))
+      print('type(value) == self.TYPE: %s' % (type(value) == self.TYPE))
+      print('value.__class__ == self.TYPE: %s' % (value.__class__ == self.TYPE))
+      print('id %s == type %s' % (id(value.__class__), id(self.TYPE)))
+      if hasattr(value, 'type_parameters'):
+        print('value.type_parameters = %s' % repr(value.type_parameters()))
+        print('EQUALS = %s' % (
+          value.type_parameters() == self.TYPE.type_parameters()))
+      print('self.TYPE.parameters = %s' % repr(self.TYPE.type_parameters()))
       if isinstance(value, self.TYPE):
         return value
       else:
+        print('Instance check failed.')
         return self.TYPE(value)
-    return [coerced(v) for v in values]
+    return tuple([coerced(v) for v in values])
 
   def check(self):
     if not ListContainer.isiterable(self._values):
@@ -129,7 +142,7 @@ class MapFactory(TypeFactory):
     key_klazz, value_klazz = TypeFactory.new(*key_klazz), TypeFactory.new(*value_klazz)
     assert isclass(key_klazz) and isclass(value_klazz)
     assert issubclass(key_klazz, Object) and issubclass(value_klazz, Object)
-    return type('%s%sMap' % (key_klazz.__name__, value_klazz.__name__), (MapContainer,),
+    return TypeMetaclass('%s%sMap' % (key_klazz.__name__, value_klazz.__name__), (MapContainer,),
       { 'KEYTYPE': key_klazz, 'VALUETYPE': value_klazz })
 
 
@@ -159,7 +172,7 @@ class MapContainer(Namable, Object, Type):
     Object.__init__(self)
 
   def get(self):
-    return frozendict((k.get(), v.get()) for (k, v) in self._map.items())
+    return frozendict((k.get(), v.get()) for (k, v) in self._map)
 
   def _coerce_wrapper(self, key, value):
     coerced_key = key if isinstance(key, self.KEYTYPE) else self.KEYTYPE(key)

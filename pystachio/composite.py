@@ -3,7 +3,7 @@ import copy
 from inspect import isclass
 
 from pystachio.base import Object, frozendict
-from pystachio.schema import TypeFactory, TypeCheck, Type
+from pystachio.schema import TypeFactory, TypeCheck, Type, TypeMetaclass
 from pystachio.naming import Namable
 
 class Empty(object):
@@ -114,7 +114,7 @@ class StructFactory(TypeFactory):
     typename = type_parameters[0]
     typemap = dict((attr, TypeSignature.deserialize(param)) for attr, param in type_parameters[1:])
     attributes = {'TYPEMAP': typemap}
-    return type(typename, (Structural,), attributes)
+    return TypeMetaclass(typename, (Structural,), attributes)
 
 
 
@@ -143,6 +143,7 @@ class StructMetaclass(type):
 
 
 StructMetaclassWrapper = StructMetaclass('StructMetaclassWrapper', (object,), {})
+
 class Structural(Object, Type, Namable):
   """A Structural base type for composite objects."""
 
@@ -150,7 +151,7 @@ class Structural(Object, Type, Namable):
     self._init_schema_data()
     for arg in args:
       if not isinstance(arg, Mapping):
-        raise ValueError('Expected dictionary argument')
+        raise ValueError('Expected dictionary argument, got %s' % repr(arg))
       self._update_schema_data(**arg)
     self._update_schema_data(**copy.deepcopy(kw))
     Object.__init__(self)
@@ -192,7 +193,7 @@ class Structural(Object, Type, Namable):
     return new_self
 
   def __eq__(self, other):
-    if not isinstance(other, self.__class__): return False
+    if not isinstance(other, Structural): return False
     if self.TYPEMAP != other.TYPEMAP: return False
     si = self.interpolate()
     oi = other.interpolate()
@@ -236,7 +237,8 @@ class Structural(Object, Type, Namable):
   
   @classmethod
   def type_parameters(cls):
-    return (cls.__name__,) + tuple([(attr, sig.serialize()) for attr, sig in cls.TYPEMAP.items()])
+    return (cls.__name__,) + tuple(
+      sorted([(attr, sig.serialize()) for attr, sig in cls.TYPEMAP.items()]))
 
   def find(self, ref):
     if not ref.is_dereference():

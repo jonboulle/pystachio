@@ -136,6 +136,22 @@ class TypeFactory(TypeFactoryClass):
     """
     deposit = {}
 
+class TypeMetaclass(type):
+  def __instancecheck__(cls, other):
+    print('DOING INSTANCECHECK!!!! %s vs %s' % (cls, type(other)))
+    if not hasattr(other, 'type_parameters'):
+      print('Instancecheck fail 1')
+      return False
+    print('cls.type_factory() %s' % repr(cls.type_factory()))
+    print('other.type_factory() %s' % repr(other.type_factory()))
+    print('cls.type_parameters() %s' % repr(cls.type_parameters()))
+    print('other.type_parameters() %s' % repr(other.type_parameters()))
+
+    return cls.type_factory() == other.type_factory() and (
+      cls.type_parameters() == other.type_parameters())    
+
+  def __new__(mcls, name, parents, attributes):
+    return type.__new__(mcls, name, parents, attributes)
 
 class Type(object):
   @classmethod
