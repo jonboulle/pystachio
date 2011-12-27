@@ -152,14 +152,14 @@ class MapContainer(Namable, Object, Type):
     Map types.  It won't function as-is, since it requires cls.KEYTYPE and
     cls.VALUETYPE to be set to the appropriate types.  If you want a
     concrete Map type, see the Map() function.
-    
+
     __init__(dict) => translates to list of tuples & sanity checks
     __init__(tuple) => sanity checks
   """
   def __init__(self, *args):
     """
       Construct a map.
-      
+
       Input:
         sequence of tuples _or_ a dictionary
     """
@@ -177,7 +177,7 @@ class MapContainer(Namable, Object, Type):
   def _coerce_wrapper(self, key, value):
     coerced_key = key if isinstance(key, self.KEYTYPE) else self.KEYTYPE(key)
     coerced_value = value if isinstance(value, self.VALUETYPE) else self.VALUETYPE(value)
-    return (coerced_key, coerced_value)  
+    return (coerced_key, coerced_value)
 
   def _coerce_map(self, input_map):
     return tuple(self._coerce_wrapper(key, value) for key, value in input_map.items())

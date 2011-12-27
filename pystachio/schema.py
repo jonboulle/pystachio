@@ -1,7 +1,7 @@
 import functools
 from inspect import isclass
 
-# It seems like Struct should just be a metaclass that just translates the parameters into the 
+# It seems like Struct should just be a metaclass that just translates the parameters into the
 # tuples understandable by the Type system, because honestly we should just be able to call
 # factory.new(parameters) => type
 #
@@ -72,7 +72,7 @@ class TypeFactory(TypeFactoryClass):
   def create(*type_parameters):
     """
       Implemented by the TypeFactory to produce a new type.
-      
+
       Should return:
         reified type
         (with usable type.__name__)
@@ -116,20 +116,20 @@ class TypeFactory(TypeFactoryClass):
     """
       Determine all types touched by loading the type and deposit them into
       the particular namespace.
-      
+
       If a type takes parameters, we should dump the .create method as the
       PROVIDES type.  Otherwise, we should dump a fully reified type.
-      
+
       For example:
         StringFactory.create() takes no parameters ==> dump StringFactory.PROVIDES as
         the output of StringFactory.create()
-        
+
         MapFactory.create() takes parameters ==> dump MapFactory.PROVIDES as
         MapFactory.create()
-        
+
         StructFactory.create takes parameters ==> but set PROVIDES to Structy, so that
         to create, you do Structy(foooo), then Struct is the metaclass.
-      
+
       That doesn't make any sense.  Load doesn't load any type factories: only reified types.
       And the basic types (String, Integer, etc) should get loaded in course of loading from
       schema.  Don't worry...
@@ -148,7 +148,7 @@ class TypeMetaclass(type):
     print('other.type_parameters() %s' % repr(other.type_parameters()))
 
     return cls.type_factory() == other.type_factory() and (
-      cls.type_parameters() == other.type_parameters())    
+      cls.type_parameters() == other.type_parameters())
 
   def __new__(mcls, name, parents, attributes):
     return type.__new__(mcls, name, parents, attributes)
@@ -158,12 +158,12 @@ class Type(object):
   def type_factory(cls):
     """ Return the name of the factory that produced this class. """
     raise NotImplementedError
-  
+
   @classmethod
   def type_parameters(cls):
     """ Return the type parameters used to produce this class. """
     raise NotImplementedError
-  
+
   @classmethod
   def serialize_type(cls):
     return (cls.type_factory(),) + cls.type_parameters()

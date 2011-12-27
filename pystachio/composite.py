@@ -97,12 +97,12 @@ def Default(cls, default):
 
 class StructFactory(TypeFactory):
   PROVIDES = 'Struct'
-  
+
   @staticmethod
   def create(*type_parameters):
     """
       StructFactory.create(*type_parameters) expects:
-      
+
         class name,
         (attribute_name1, attribute_sig1 (serialized)),
         (attribute_name2, attribute_sig2 ...),
@@ -234,7 +234,7 @@ class Structural(Object, Type, Namable):
   @classmethod
   def type_factory(cls):
     return 'Struct'
-  
+
   @classmethod
   def type_parameters(cls):
     return (cls.__name__,) + tuple(
