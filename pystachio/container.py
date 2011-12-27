@@ -3,29 +3,32 @@ import copy
 from inspect import isclass
 
 from pystachio import Types
-from pystachio.base import Object, TypeCheck, frozendict
+from pystachio.base import Object, frozendict
 from pystachio.naming import Namable
-from pystachio.schema import ParametricType
+from pystachio.schema import TypeFactory, Type
 
-class ListContainer(Namable, Object, ParametricType):
+class ListFactory(TypeFactory):
+  PROVIDES = 'List'
+
+  @staticmethod
+  def create(*type_parameters):
+    """
+      Construct a List containing type 'klazz'.
+    """
+    assert len(type_parameters) == 1
+    klazz = TypeFactory.new(*type_parameters[0])
+    assert isclass(klazz)
+    assert issubclass(klazz, Object)
+    return type('%sList' % klazz.__name__, (ListContainer,), { 'TYPE': klazz })
+
+
+class ListContainer(Namable, Object, Type):
   """
     The List container type.  This is the base class for all user-generated
     List types.  It won't function as-is, since it requires cls.TYPE to be
     set to the contained type.  If you want a concrete List type, see the
     List() function.
   """
-  @staticmethod
-  def new(klazz):
-    """
-      Construct a List containing type 'klazz'.
-    """
-    assert isclass(klazz)
-    assert issubclass(klazz, Object)
-    if klazz not in ListContainer._MEMOIZED_TYPES:
-      ListContainer._MEMOIZED_TYPES[klazz] = type('%sList' % klazz.__name__,
-        (ListContainer,), { 'TYPE': klazz })
-    return ListContainer._MEMOIZED_TYPES[klazz]
-
   def __init__(self, vals):
     self._values = self._coerce_values(copy.deepcopy(vals))
     Object.__init__(self)
@@ -106,66 +109,81 @@ class ListContainer(Namable, Object, ParametricType):
           return namable.in_scope(*self.scopes()).find(ref.rest())
 
   @classmethod
-  def schema_name(cls):
-    return 'ListContainer'
+  def type_factory(cls):
+    return 'List'
 
   @classmethod
-  def serialize_schema(cls):
-    return (cls.schema_name(), {
-      '__name__': cls.__name__,
-      '__containing__': cls.TYPE.serialize_schema()
-    })
+  def type_parameters(cls):
+    return (cls.TYPE.serialize_type(),)
+
+List = TypeFactory.wrapper(ListFactory)
+
+
+class MapFactory(TypeFactory):
+  PROVIDES = 'Map'
 
   @staticmethod
-  def deserialize_schema(schema):
-    _, schema_parameters = schema
-    contained_type = Schema.deserialize_schema(schema_parameters['__containing__'])
-    real_type = ListContainer.new(contained_type)
-    assert schema_parameters['__name__'] == real_type.__name__
-    return real_type
+  def create(*type_parameters):
+    assert len(type_parameters) == 2, 'Type parameters: %s' % repr(type_parameters)
+    key_klazz, value_klazz = type_parameters
+    key_klazz, value_klazz = TypeFactory.new(*key_klazz), TypeFactory.new(*value_klazz)
+    assert isclass(key_klazz) and isclass(value_klazz)
+    assert issubclass(key_klazz, Object) and issubclass(value_klazz, Object)
+    return type('%s%sMap' % (key_klazz.__name__, value_klazz.__name__), (MapContainer,),
+      { 'KEYTYPE': key_klazz, 'VALUETYPE': value_klazz })
 
-Schema.register_schema(ListContainer)
-List = ListContainer.new
 
-
-class MapContainer(Namable, Object, ParametricType):
+class MapContainer(Namable, Object, Type):
   """
     The Map container type.  This is the base class for all user-generated
     Map types.  It won't function as-is, since it requires cls.KEYTYPE and
     cls.VALUETYPE to be set to the appropriate types.  If you want a
     concrete Map type, see the Map() function.
+    
+    __init__(dict) => translates to list of tuples & sanity checks
+    __init__(tuple) => sanity checks
   """
-  _MEMOIZED_TYPES = {}
-
-  @staticmethod
-  def new(key_cls, value_cls):
-    assert isclass(key_cls) and isclass(value_cls)
-    assert issubclass(key_cls, Object) and issubclass(value_cls, Object)
-    if (key_cls, value_cls) not in MapContainer._MEMOIZED_TYPES:
-      MapContainer._MEMOIZED_TYPES[(key_cls, value_cls)] = type(
-        '%s%sMap' % (key_cls.__name__, value_cls.__name__), (MapContainer,),
-        { 'KEYTYPE': key_cls, 'VALUETYPE': value_cls })
-    return MapContainer._MEMOIZED_TYPES[(key_cls, value_cls)]
-
-  def __init__(self, input_map):
-    self._map = self._coerce_map(copy.deepcopy(input_map))
+  def __init__(self, *args):
+    """
+      Construct a map.
+      
+      Input:
+        sequence of tuples _or_ a dictionary
+    """
+    if len(args) == 1 and isinstance(args[0], Mapping):
+      self._map = self._coerce_map(copy.deepcopy(args[0]))
+    elif all(isinstance(arg, Iterable) and len(arg)==2 for arg in args):
+      self._map = self._coerce_tuple(args)
+    else:
+      raise ValueError("Unexpected input to MapContainer: %s" % repr(args))
     Object.__init__(self)
 
   def get(self):
     return frozendict((k.get(), v.get()) for (k, v) in self._map.items())
 
+  def _coerce_wrapper(self, key, value):
+    coerced_key = key if isinstance(key, self.KEYTYPE) else self.KEYTYPE(key)
+    coerced_value = value if isinstance(value, self.VALUETYPE) else self.VALUETYPE(value)
+    return (coerced_key, coerced_value)  
+
+  def _coerce_map(self, input_map):
+    return tuple(self._coerce_wrapper(key, value) for key, value in input_map.items())
+
+  def _coerce_tuple(self, input_tuple):
+    return tuple(self._coerce_wrapper(key, value) for key, value in input_tuple)
+
   def __hash__(self):
     return hash(self.get())
 
   def copy(self):
-    new_self = self.__class__(self._map)
+    new_self = self.__class__(*self._map)
     new_self._scopes = copy.deepcopy(self.scopes())
     return new_self
 
   def __repr__(self):
     si, _ = self.interpolate()
     return '%s(%s)' % (self.__class__.__name__,
-      ', '.join('%s => %s' % (key, val) for key, val in si._map.items()))
+      ', '.join('%s => %s' % (key, val) for key, val in si._map))
 
   def __eq__(self, other):
     if not isinstance(other, MapContainer): return False
@@ -174,15 +192,6 @@ class MapContainer(Namable, Object, ParametricType):
     si, _ = self.interpolate()
     oi, _ = other.interpolate()
     return si._map == oi._map
-
-  def _coerce_map(self, input_map):
-    if not isinstance(input_map, Mapping):
-      raise ValueError("MapContainer expects a Mapping, got %s" % repr(input_map))
-    def coerced(key, value):
-      coerced_key = key if isinstance(key, self.KEYTYPE) else self.KEYTYPE(key)
-      coerced_value = value if isinstance(value, self.VALUETYPE) else self.VALUETYPE(value)
-      return (coerced_key, coerced_value)
-    return dict(coerced(key, value) for key, value in input_map.items())
 
   def check(self):
     if not isinstance(self._map, Mapping):
@@ -204,51 +213,37 @@ class MapContainer(Namable, Object, ParametricType):
 
   def interpolate(self):
     unbound = set()
-    interpolated = {}
-    for key, value in self._map.items():
+    interpolated = []
+    for key, value in self._map:
       kinterp, kunbound = key.in_scope(*self.scopes()).interpolate()
       vinterp, vunbound = value.in_scope(*self.scopes()).interpolate()
       unbound.update(kunbound)
       unbound.update(vunbound)
-      interpolated[kinterp] = vinterp
-    return self.__class__(interpolated), list(unbound)
+      interpolated.append((kinterp, vinterp))
+    return self.__class__(*interpolated), list(unbound)
 
   def find(self, ref):
     if not ref.is_index():
       raise Namable.NamingError(self, ref)
     kvalue = self.KEYTYPE(ref.action().value)
-    if kvalue not in self._map:
-      raise Namable.NotFound(self, ref)
-    else:
-      namable = self._map[kvalue]
-      if ref.rest().is_empty():
-        return namable.in_scope(*self.scopes())
-      else:
-        if not isinstance(namable, Namable):
-          raise Namable.Unnamable(namable)
+    for key, namable in self._map:
+      if kvalue == key:
+        if ref.rest().is_empty():
+          return namable.in_scope(*self.scopes())
         else:
-          return namable.in_scope(*self.scopes()).find(ref.rest())
+          if not isinstance(namable, Namable):
+            raise Namable.Unnamable(namable)
+          else:
+            return namable.in_scope(*self.scopes()).find(ref.rest())
+    raise Namable.NotFound(self, ref)
 
   @classmethod
-  def schema_name(cls):
-    return 'MapContainer'
+  def type_factory(cls):
+    return 'Map'
 
   @classmethod
-  def serialize_schema(cls):
-    return (cls.schema_name(), {
-      '__name__': cls.__name__,
-      '__keys__': cls.KEYTYPE.serialize_schema(),
-      '__values__': cls.VALUETYPE.serialize_schema()
-    })
+  def type_parameters(cls):
+    return (cls.KEYTYPE.serialize_type(), cls.VALUETYPE.serialize_type())
 
-  @staticmethod
-  def deserialize_schema(schema):
-    _, schema_parameters = schema
-    key_type = Schema.deserialize_schema(schema_parameters['__keys__'])
-    value_type = Schema.deserialize_schema(schema_parameters['__values__'])
-    real_type = MapContainer.new(key_type, value_type)
-    assert schema_parameters['__name__'] == real_type.__name__
-    return real_type
 
-Schema.register_schema(MapContainer)
-Map = MapContainer.new
+Map = TypeFactory.wrapper(MapFactory)
