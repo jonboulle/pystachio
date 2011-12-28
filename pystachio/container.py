@@ -30,7 +30,7 @@ class ListContainer(Namable, Object, Type):
     List() function.
   """
   def __init__(self, vals):
-    self._values = self._coerce_values(copy.deepcopy(vals))
+    self._values = self._coerce_values(copy.copy(vals))
     Object.__init__(self)
 
   def get(self):
@@ -38,7 +38,7 @@ class ListContainer(Namable, Object, Type):
 
   def copy(self):
     new_self = self.__class__(self._values)
-    new_self._scopes = copy.deepcopy(self.scopes())
+    new_self._scopes = copy.copy(self.scopes())
     return new_self
 
   def __hash__(self):
@@ -164,7 +164,7 @@ class MapContainer(Namable, Object, Type):
         sequence of tuples _or_ a dictionary
     """
     if len(args) == 1 and isinstance(args[0], Mapping):
-      self._map = self._coerce_map(copy.deepcopy(args[0]))
+      self._map = self._coerce_map(copy.copy(args[0]))
     elif all(isinstance(arg, Iterable) and len(arg)==2 for arg in args):
       self._map = self._coerce_tuple(args)
     else:
@@ -190,7 +190,7 @@ class MapContainer(Namable, Object, Type):
 
   def copy(self):
     new_self = self.__class__(*self._map)
-    new_self._scopes = copy.deepcopy(self.scopes())
+    new_self._scopes = copy.copy(self.scopes())
     return new_self
 
   def __repr__(self):

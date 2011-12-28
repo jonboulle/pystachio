@@ -153,7 +153,7 @@ class Structural(Object, Type, Namable):
       if not isinstance(arg, Mapping):
         raise ValueError('Expected dictionary argument, got %s' % repr(arg))
       self._update_schema_data(**arg)
-    self._update_schema_data(**copy.deepcopy(kw))
+    self._update_schema_data(**copy.copy(kw))
     Object.__init__(self)
 
   def get(self):
@@ -184,12 +184,12 @@ class Structural(Object, Type, Namable):
 
   def copy(self):
     new_object = self.__class__(**self._schema_data)
-    new_object._scopes = copy.deepcopy(self.scopes())
+    new_object._scopes = copy.copy(self.scopes())
     return new_object
 
   def __call__(self, **kw):
     new_self = self.copy()
-    new_self._update_schema_data(**copy.deepcopy(kw))
+    new_self._update_schema_data(**copy.copy(kw))
     return new_self
 
   def __eq__(self, other):

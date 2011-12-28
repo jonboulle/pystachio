@@ -15,7 +15,7 @@ class SimpleObject(Object, Type):
       Exception.__init__(self, "Cannot coerce '%s' to %s" % (src, dst.__name__))
 
   def __init__(self, value):
-    self._value = copy.deepcopy(value)
+    self._value = value
     Object.__init__(self)
 
   def get(self):
@@ -23,7 +23,7 @@ class SimpleObject(Object, Type):
 
   def copy(self):
     new_self = self.__class__(self._value)
-    new_self._scopes = copy.deepcopy(self.scopes())
+    new_self._scopes = copy.copy(self.scopes())
     return new_self
 
   def _my_cmp(self, other):
