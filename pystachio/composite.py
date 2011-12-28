@@ -129,8 +129,6 @@ class StructMetaclass(type):
       sig = TypeSignature.wrap(attr_value)
       if sig:
         parameters.append((attr_name, sig.serialize()))
-      else:
-        print("Skipped attribute: %s" % attr_name)
     return parameters
 
   def __new__(mcs, name, parents, attributes):

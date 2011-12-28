@@ -64,20 +64,7 @@ class ListContainer(Namable, Object, Type):
     if not ListContainer.isiterable(values):
       raise ValueError("ListContainer expects an iterable, got %s" % repr(values))
     def coerced(value):
-      print('Coercing %s to %s' % (type(value), self.TYPE))
-      print('type(value) == self.TYPE: %s' % (type(value) == self.TYPE))
-      print('value.__class__ == self.TYPE: %s' % (value.__class__ == self.TYPE))
-      print('id %s == type %s' % (id(value.__class__), id(self.TYPE)))
-      if hasattr(value, 'type_parameters'):
-        print('value.type_parameters = %s' % repr(value.type_parameters()))
-        print('EQUALS = %s' % (
-          value.type_parameters() == self.TYPE.type_parameters()))
-      print('self.TYPE.parameters = %s' % repr(self.TYPE.type_parameters()))
-      if isinstance(value, self.TYPE):
-        return value
-      else:
-        print('Instance check failed.')
-        return self.TYPE(value)
+      return value if isinstance(value, self.TYPE) else self.TYPE(value)
     return tuple([coerced(v) for v in values])
 
   def check(self):

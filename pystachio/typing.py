@@ -1,16 +1,6 @@
 import functools
 from inspect import isclass
 
-# It seems like Struct should just be a metaclass that just translates the parameters into the
-# tuples understandable by the Type system, because honestly we should just be able to call
-# factory.new(parameters) => type
-#
-# We should just have MapFactory, ListFactory, StructFactory, StringFactory, IntegerFactory, etc.
-# The {Integer,String,Float}Factory.new() is parameterless.
-# StructFactory.new() takes very rich structured information but is never called directly except
-# during type serialization and deserialization.  Mostly StructMetaclass translates the class
-# definition directly into this intermediate format.
-
 class TypeCheck(object):
   """
     Encapsulate the results of a type check pass.
@@ -85,7 +75,6 @@ class TypeFactory(TypeFactoryClass):
       Memoization of creates.
     """
     type_tuple = (type_factory,) + type_parameters
-    print('Type tuple: %s' % repr(type_tuple))
     if type_tuple not in TypeFactory._PARAMETERS:
       factory = TypeFactory.get_factory(type_factory)
       reified_type = factory.create(*type_parameters)
@@ -116,37 +105,13 @@ class TypeFactory(TypeFactoryClass):
     """
       Determine all types touched by loading the type and deposit them into
       the particular namespace.
-
-      If a type takes parameters, we should dump the .create method as the
-      PROVIDES type.  Otherwise, we should dump a fully reified type.
-
-      For example:
-        StringFactory.create() takes no parameters ==> dump StringFactory.PROVIDES as
-        the output of StringFactory.create()
-
-        MapFactory.create() takes parameters ==> dump MapFactory.PROVIDES as
-        MapFactory.create()
-
-        StructFactory.create takes parameters ==> but set PROVIDES to Structy, so that
-        to create, you do Structy(foooo), then Struct is the metaclass.
-
-      That doesn't make any sense.  Load doesn't load any type factories: only reified types.
-      And the basic types (String, Integer, etc) should get loaded in course of loading from
-      schema.  Don't worry...
     """
     deposit = {}
 
 class TypeMetaclass(type):
   def __instancecheck__(cls, other):
-    print('DOING INSTANCECHECK!!!! %s vs %s' % (cls, type(other)))
     if not hasattr(other, 'type_parameters'):
-      print('Instancecheck fail 1')
       return False
-    print('cls.type_factory() %s' % repr(cls.type_factory()))
-    print('other.type_factory() %s' % repr(other.type_factory()))
-    print('cls.type_parameters() %s' % repr(cls.type_parameters()))
-    print('other.type_parameters() %s' % repr(other.type_parameters()))
-
     return cls.type_factory() == other.type_factory() and (
       cls.type_parameters() == other.type_parameters())
 
