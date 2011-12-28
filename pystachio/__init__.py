@@ -5,7 +5,7 @@ __license__ = 'MIT'
 from sys import version_info
 from numbers import (Real, Integral)
 
-from pystachio.schema import (
+from pystachio.typing import (
   Type,
   TypeCheck,
   TypeFactory)

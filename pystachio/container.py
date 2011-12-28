@@ -5,7 +5,7 @@ from inspect import isclass
 from pystachio import Types
 from pystachio.base import Object, frozendict
 from pystachio.naming import Namable
-from pystachio.schema import TypeFactory, Type, TypeCheck, TypeMetaclass
+from pystachio.typing import TypeFactory, Type, TypeCheck, TypeMetaclass
 
 class ListFactory(TypeFactory):
   PROVIDES = 'List'

@@ -3,7 +3,7 @@ import copy
 from pystachio import Types
 from pystachio.base import Object
 from pystachio.parsing import MustacheParser
-from pystachio.schema import Type, TypeFactory, TypeCheck
+from pystachio.typing import Type, TypeFactory, TypeCheck
 
 
 class SimpleObject(Object, Type):

@@ -3,8 +3,8 @@ import copy
 from inspect import isclass
 
 from pystachio.base import Object, frozendict
-from pystachio.schema import TypeFactory, TypeCheck, Type, TypeMetaclass
 from pystachio.naming import Namable
+from pystachio.typing import TypeFactory, TypeCheck, Type, TypeMetaclass
 
 class Empty(object):
   """The Empty sentinel representing an unspecified field."""
