@@ -45,12 +45,9 @@ class TypeFactoryType(type):
       TypeFactoryType._TYPE_FACTORIES[provides] = new_type
       return new_type
 
+
 TypeFactoryClass = TypeFactoryType('TypeFactoryClass', (object,), {})
-
 class TypeFactory(TypeFactoryClass):
-  _PARAMETERS = {}   # parameters => emitted type name
-  _TYPES = {}        # type name => fully reified type
-
   @staticmethod
   def get_factory(type_name):
     assert type_name in TypeFactoryType._TYPE_FACTORIES, (
@@ -59,7 +56,7 @@ class TypeFactory(TypeFactoryClass):
     return TypeFactoryType._TYPE_FACTORIES[type_name]
 
   @staticmethod
-  def create(*type_parameters):
+  def create(type_dict, *type_parameters):
     """
       Implemented by the TypeFactory to produce a new type.
 
@@ -70,18 +67,16 @@ class TypeFactory(TypeFactoryClass):
     raise NotImplementedError("create unimplemented for: %s" % repr(type_parameters))
 
   @staticmethod
-  def new(type_factory, *type_parameters):
+  def new(type_dict, type_factory, *type_parameters):
     """
-      Memoization of creates.
+      Create a fully reified type from a type schema.
     """
     type_tuple = (type_factory,) + type_parameters
-    if type_tuple not in TypeFactory._PARAMETERS:
+    if type_tuple not in type_dict:
       factory = TypeFactory.get_factory(type_factory)
-      reified_type = factory.create(*type_parameters)
-      type_name = reified_type.__name__
-      TypeFactory._PARAMETERS[type_tuple] = type_name
-      TypeFactory._TYPES[type_name] = reified_type
-    return TypeFactory._TYPES[TypeFactory._PARAMETERS[type_tuple]]
+      reified_type = factory.create(type_dict, *type_parameters)
+      type_dict[type_tuple] = reified_type
+    return type_dict[type_tuple]
 
   @staticmethod
   def wrap(type_info):
@@ -94,10 +89,8 @@ class TypeFactory(TypeFactoryClass):
   def wrapper(factory):
     assert issubclass(factory, TypeFactory)
     def wrapper_function(*type_parameters):
-      return TypeFactory.new(factory.PROVIDES, *tuple(
+      return TypeFactory.new({}, factory.PROVIDES, *tuple(
         [typ.serialize_type() for typ in type_parameters]))
-    #def wrapper_function(*type_parameters):
-    #  return TypeFactory.new(factory.PROVIDES, *type_parameters)
     return wrapper_function
 
   @staticmethod
@@ -106,7 +99,13 @@ class TypeFactory(TypeFactoryClass):
       Determine all types touched by loading the type and deposit them into
       the particular namespace.
     """
-    deposit = {}
+    type_dict = {}
+    TypeFactory.new(type_dict, *type_tuple)
+    deposit = into if (into is not None and isinstance(into, dict)) else {}
+    for reified_type in type_dict.values():
+      deposit[reified_type.__name__] = reified_type
+    return deposit
+
 
 class TypeMetaclass(type):
   def __instancecheck__(cls, other):

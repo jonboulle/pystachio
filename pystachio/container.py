@@ -11,12 +11,12 @@ class ListFactory(TypeFactory):
   PROVIDES = 'List'
 
   @staticmethod
-  def create(*type_parameters):
+  def create(type_dict, *type_parameters):
     """
       Construct a List containing type 'klazz'.
     """
     assert len(type_parameters) == 1
-    klazz = TypeFactory.new(*type_parameters[0])
+    klazz = TypeFactory.new(type_dict, *type_parameters[0])
     assert isclass(klazz)
     assert issubclass(klazz, Object)
     return TypeMetaclass('%sList' % klazz.__name__, (ListContainer,), { 'TYPE': klazz })
@@ -51,7 +51,7 @@ class ListContainer(Namable, Object, Type):
 
   def __eq__(self, other):
     if not isinstance(other, ListContainer): return False
-    if self.TYPE != other.TYPE: return False
+    if self.TYPE.serialize_type() != other.TYPE.serialize_type(): return False
     si, _ = self.interpolate()
     oi, _ = other.interpolate()
     return si._values == oi._values
@@ -123,10 +123,11 @@ class MapFactory(TypeFactory):
   PROVIDES = 'Map'
 
   @staticmethod
-  def create(*type_parameters):
+  def create(type_dict, *type_parameters):
     assert len(type_parameters) == 2, 'Type parameters: %s' % repr(type_parameters)
     key_klazz, value_klazz = type_parameters
-    key_klazz, value_klazz = TypeFactory.new(*key_klazz), TypeFactory.new(*value_klazz)
+    key_klazz, value_klazz = (TypeFactory.new(type_dict, *key_klazz),
+                              TypeFactory.new(type_dict, *value_klazz))
     assert isclass(key_klazz) and isclass(value_klazz)
     assert issubclass(key_klazz, Object) and issubclass(value_klazz, Object)
     return TypeMetaclass('%s%sMap' % (key_klazz.__name__, value_klazz.__name__), (MapContainer,),
@@ -187,8 +188,8 @@ class MapContainer(Namable, Object, Type):
 
   def __eq__(self, other):
     if not isinstance(other, MapContainer): return False
-    if self.KEYTYPE != other.KEYTYPE: return False
-    if self.VALUETYPE != other.VALUETYPE: return False
+    if self.KEYTYPE.serialize_type() != other.KEYTYPE.serialize_type(): return False
+    if self.VALUETYPE.serialize_type() != other.VALUETYPE.serialize_type(): return False
     si, _ = self.interpolate()
     oi, _ = other.interpolate()
     return si._map == oi._map

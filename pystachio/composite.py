@@ -32,16 +32,16 @@ class TypeSignature(object):
             self.klazz.serialize_type())
 
   @staticmethod
-  def deserialize(sig):
+  def deserialize(sig, type_dict):
     req, default, empty, klazz_schema = sig
-    real_class = TypeFactory.new(*klazz_schema)
+    real_class = TypeFactory.new(type_dict, *klazz_schema)
     if not empty:
       return TypeSignature(real_class, default=real_class(default), required=req)
     else:
       return TypeSignature(real_class, required=req)
 
   def __eq__(self, other):
-    return (self.klazz == other.klazz and
+    return (self.klazz.serialize_type() == other.klazz.serialize_type() and
             self.required == other.required and
             self.default == other.default and
             self.empty == other.empty)
@@ -99,7 +99,7 @@ class StructFactory(TypeFactory):
   PROVIDES = 'Struct'
 
   @staticmethod
-  def create(*type_parameters):
+  def create(type_dict, *type_parameters):
     """
       StructFactory.create(*type_parameters) expects:
 
@@ -112,7 +112,8 @@ class StructFactory(TypeFactory):
     for param in type_parameters[1:]:
       assert isinstance(param, tuple)
     typename = type_parameters[0]
-    typemap = dict((attr, TypeSignature.deserialize(param)) for attr, param in type_parameters[1:])
+    typemap = dict((attr, TypeSignature.deserialize(param, type_dict))
+                   for attr, param in type_parameters[1:])
     attributes = {'TYPEMAP': typemap}
     return TypeMetaclass(typename, (Structural,), attributes)
 
@@ -135,7 +136,7 @@ class StructMetaclass(type):
     if any(parent.__name__ == 'Struct' for parent in parents):
       type_parameters = StructMetaclass.attributes_to_parameters(attributes)
       type_parameters = (name,) + tuple(type_parameters)
-      return TypeFactory.new('Struct', *type_parameters)
+      return TypeFactory.new({}, 'Struct', *type_parameters)
     else:
       return type.__new__(mcs, name, parents, attributes)
 

@@ -113,7 +113,7 @@ class String(SimpleObject):
 class StringFactory(TypeFactory):
   PROVIDES = 'String'
   @staticmethod
-  def create(*type_parameters):
+  def create(type_dict, *type_parameters):
     return String
 
 
@@ -142,7 +142,7 @@ class Integer(SimpleObject):
 class IntegerFactory(TypeFactory):
   PROVIDES = 'Integer'
   @staticmethod
-  def create(*type_parameters):
+  def create(type_dict, *type_parameters):
     return Integer
 
 
@@ -172,5 +172,5 @@ class Float(SimpleObject):
 class FloatFactory(TypeFactory):
   PROVIDES = 'Float'
   @staticmethod
-  def create(*type_parameters):
+  def create(type_dict, *type_parameters):
     return Float
